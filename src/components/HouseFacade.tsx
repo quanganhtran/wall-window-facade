@@ -1,6 +1,6 @@
-import * as React from "react";
-import { Composition } from "../core/facade";
-import { Card, Grid } from "semantic-ui-react";
+import * as React from 'react';
+import { Composition } from 'src/core/facade';
+import { Card, Grid } from 'semantic-ui-react';
 
 type Props = { composition: Composition }
 

@@ -1,18 +1,15 @@
 import * as React from 'react';
-import { Settings } from "../core/facade";
+import { Settings } from 'src/core/facade';
 import {
-    Card,
     Form,
     FormField,
     FormGroup,
     FormInput,
     Grid,
     GridColumn,
-    GridRow,
-    Label,
     Segment
-} from "semantic-ui-react";
-import immer from "immer";
+} from 'semantic-ui-react';
+import immer from 'immer';
 
 type Props = { value: Settings, onChange: (value: Settings) => void }
 
