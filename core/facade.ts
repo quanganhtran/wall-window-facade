@@ -21,7 +21,7 @@ const floorsOf4 =
 const floorsOf3 =
     cartesian([false], candidates, candidates, [false], candidates, [false]);
 const floorOf0 =
-    [false, true, true, true, true, false];
+    [false, false, true, true, false, false];
 
 const merged = cartesian(floorsOf4, floorsOf4, floorsOf3);
 export const compositions: Composition[] = merged.map((l, index) => ({
