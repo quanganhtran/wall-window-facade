@@ -1,23 +1,23 @@
 import type { NextPage } from 'next'
+import type { BuildingOptions } from 'src/core/facade';
 import { CardGroup, Segment } from 'semantic-ui-react';
-import { defaultFixedPositions, getCompositions, Settings } from 'src/core/facade';
+import {
+    getCompositions,
+    getDefaultBuildingOptions,
+} from 'src/core/facade';
 import HouseFacade from 'src/components/HouseFacade';
 import { useState } from 'react';
 import SettingsInput from 'src/components/SettingsInput';
 
 const Home: NextPage = () => {
-    const [settings, setSettings] = useState<Settings>({
-        minWindows: [4, 4, 1],
-        minWalls: [1, 1, 2],
-        fixedPositions: defaultFixedPositions,
-    });
+    const [options, setOptions] = useState<BuildingOptions>(getDefaultBuildingOptions());
 
     return (
         <main>
-            <SettingsInput value={settings} onChange={setSettings}/>
+            <SettingsInput value={options} onChange={setOptions}/>
             <Segment basic>
                 <CardGroup itemsPerRow={4}>
-                  {getCompositions(settings).map((l) =>
+                  {getCompositions(options).map((l) =>
                     <HouseFacade key={l.id} composition={l}/>
                   )}
                 </CardGroup>

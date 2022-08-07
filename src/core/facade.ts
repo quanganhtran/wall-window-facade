@@ -3,77 +3,114 @@ export type Composition = {
     layout: boolean[]
 }
 
-type FixedPositions = (boolean | null)[];
-
-export type Settings = {
-    minWindows: [number, number, number]
-    minWalls: [number, number, number]
-    fixedPositions: [FixedPositions, FixedPositions, FixedPositions]
+export type CompositionPage = {
+    totalCount: number
+    slice: Composition[]
 }
+
+export type FloorOptions = {
+    minWindow: number
+    minWall: number
+    fixedLayout: FeatureOptions[]
+}
+
+type FeatureOptions = {
+    isWindow: boolean | null
+    readonly: boolean
+}
+
+export type BuildingOptions = [FloorOptions, ...FloorOptions[]]
 
 const candidates = [false, true];
 
 const cartesian =
     (...a): boolean[][] => a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())));
 
-const floorsOf4 =
-    cartesian([true], candidates, candidates, candidates, candidates, [true]);
-const floorsOf3 =
-    cartesian([false], candidates, candidates, [false], candidates, [false]);
-const floorOf0 =
-    [false, false, true, true, false, false];
-
-const merged = cartesian(floorsOf4, floorsOf4, floorsOf3);
-export const compositions: Composition[] = merged.map((l, index) => ({
-    id: index,
-    layout: [...l, ...floorOf0],
-}));
-
-global.compositions = compositions;
-
-    // layout: [
-    //     l.slice(0, 6),
-    //     l.slice(6, 12),
-    //     l.slice(12),
-    //     floorOf0,
-    // ],
+const floor6Columns =
+    cartesian(...new Array(6).fill(candidates));
+const floor1 = [false, false, true, true, false, false];
 
 function countItems(floor: boolean[]) {
     return floor.reduce(([windows, walls], isWindow) =>
         isWindow ? [windows + 1, walls] : [windows, walls + 1], [0, 0]);
 }
 
-export const defaultFixedPositions: Settings['fixedPositions'] = [
-    [true, null, null, null, null, true],
-    [true, null, null, null, null, true],
-    [false, null, null, false, null, false],
-];
-
 export function getCompositions(
-    {minWindows, minWalls, fixedPositions}: Settings
-) {
-    const [f4, f3, f2] = [floorsOf4, floorsOf4, floorsOf3].map((floor, floorIndex) =>
-        floor.filter(composition => {
+    options: BuildingOptions,
+    // page: number = 0,
+    // perPage: number = 512,
+): Composition[] {
+    const floors = options.map(opt => {
+        return floor6Columns.filter(composition => {
             const [windows, walls] = countItems(composition);
-            const matched = () => fixedPositions[floorIndex].every((pos, index) =>
-                pos === null || pos === composition[index]);
-            return windows >= minWindows[floorIndex] && walls >= minWalls[floorIndex] && matched();
-        })
-    );
-    return cartesian(f4, f3, f2).map((l, index) => ({
+            const matched = () => opt.fixedLayout.every(({isWindow}, index) =>
+                isWindow === null || isWindow === composition[index]);
+            return windows >= opt.minWindow && walls >= opt.minWall && matched();
+        });
+    });
+    // const sizes = floors.map(fl => fl.length);
+    // const totalSize = sizes.reduce((a, b) => a * b, 1);
+    // const r = [];
+    // for (let i = page * perPage; i <= (page + 1) * perPage && i <= totalSize; i++) {
+    //     const u = floors.map((fl, flIndex) => {
+    //
+    //     });
+    // }
+    return cartesian(...floors).map((layout, index) => ({
         id: index,
-        layout: [...l, ...floorOf0],
+        layout: layout,
     }));
 }
 
-// function *floorOf4() {
-//     for (let i = 0; i < 16; i++) {
-//         const arr = [
-//             i >> 3 & 0x1,
-//             i >> 2 & 0x1,
-//             i >> 1 & 0x1,
-//             i >> 0 & 0x1,
-//         ].map(v => v === 1);
-//         yield arr;
-//     }
-// }
+global.getCompositions = getCompositions
+
+const feature =
+    (isWindow: null | boolean = null, readonly = false): FeatureOptions => ({
+        isWindow, readonly
+    });
+
+const configurable = feature();
+const alwaysWindow = feature(true, true);
+const alwaysWall = feature(false, true);
+const defaultWindow = feature(true);
+const defaultWall = feature(false);
+
+export function getDefaultBuildingOptions(): BuildingOptions {
+    return [
+        {
+            minWindow: 4,
+            minWall: 1,
+            fixedLayout: [
+                alwaysWindow, configurable, configurable, configurable, configurable, alwaysWindow
+            ],
+        },
+        {
+            minWindow: 4,
+            minWall: 1,
+            fixedLayout: [
+                alwaysWindow, configurable, configurable, configurable, configurable, alwaysWindow
+            ],
+        },
+        {
+            minWindow: 1,
+            minWall: 2,
+            fixedLayout: [
+                alwaysWall, configurable, configurable, defaultWall, configurable, alwaysWall
+            ],
+        },
+        {
+            minWindow: 2,
+            minWall: 4,
+            fixedLayout: [alwaysWall, alwaysWall, alwaysWindow, alwaysWindow, alwaysWall, alwaysWall],
+        },
+    ];
+}
+
+function parseLayoutString(s: string): FeatureOptions[] {
+    return s.split('').map(c => ({
+        'O': alwaysWindow,
+        'X': alwaysWall,
+        'o': defaultWindow,
+        'x': defaultWall,
+    }[c] ?? configurable))
+}

@@ -1,20 +1,18 @@
 import * as React from 'react';
-import { Settings } from 'src/core/facade';
+import type { BuildingOptions } from 'src/core/facade';
 import {
-    Form,
-    FormField,
-    FormGroup,
+    Button,
     FormInput,
     Grid,
-    GridColumn,
+    GridColumn, GridRow,
     Segment
 } from 'semantic-ui-react';
 import immer from 'immer';
 
-type Props = { value: Settings, onChange: (value: Settings) => void }
+type Props = { value: BuildingOptions, onChange: (value: BuildingOptions) => void }
 
 const positionCodeToColor = new Map<boolean | null, 'teal' | 'pink'>([
-    // [null, 'grey'],
+    // [null, 'black'],
     [true, 'teal'],
     [false, 'pink'],
 ] as const)
@@ -25,71 +23,68 @@ const cyclePositionCode = new Map([
     [false, null],
 ]);
 
-export default function SettingsInput({value: settings, onChange}: Props) {
+export default function SettingsInput({value: options, onChange}: Props) {
     return <Segment>
-        <Grid columns={2}>
-            <GridColumn>
-                <Form>
-                    <FormField><label>Min windows</label></FormField>
-                    <FormGroup>
-                        {settings.minWindows.map((v, i) =>
-                            <FormInput
-                                key={i}
-                                type="number"
-                                value={v}
-                                onChange={
-                                    (e, {value}) =>
-                                        onChange(immer(settings, draft => {
-                                            draft.minWindows[i] = parseInt(value, 10) || 0;
-                                        }))
+        <Grid columns={8}>
+            {options.map((floorOpt, floorIndex) =>
+                <GridRow key={floorIndex}>
+                    <GridColumn>
+                        <FormInput
+                            type="number" min={0} max={floorOpt.fixedLayout.length}
+                            icon="table"
+                            value={floorOpt.minWindow}
+                            onChange={
+                                (e, {value}) =>
+                                    onChange(immer(options, draft => {
+                                        draft[floorIndex].minWindow = parseInt(value, 10) || 0;
+                                    }))
+                            }
+                        />
+                    </GridColumn>
+                    {floorOpt.fixedLayout.slice(0, 6).map((feature, featureIndex) =>
+                        <GridColumn key={featureIndex}>
+                            <Button
+                                color={positionCodeToColor.get(feature.isWindow)}
+                                readOnly={feature.readonly}
+                                icon={
+                                    feature.readonly ? 'lock' :
+                                        feature.isWindow ? 'table' :
+                                            feature.isWindow === false ? 'th' : 'question'
                                 }
+                                onClick={() => {
+                                    let nextValueMaybe =
+                                        cyclePositionCode.get(feature.isWindow);
+                                    if (nextValueMaybe === undefined) {
+                                        if (feature.readonly) {
+                                            nextValueMaybe = false;
+                                        } else {
+                                            nextValueMaybe = null;
+                                        }
+                                    }
+                                    const nextValue = nextValueMaybe;
+                                    // console.log(options[floorIndex].fixedLayout[featureIndex].isWindow, nextValue);
+                                    onChange(immer(options, draft => {
+                                        draft[floorIndex].fixedLayout[featureIndex].isWindow = nextValue;
+                                    }));
+                                }}
                             />
-                        )}
-                    </FormGroup>
-                    <FormField><label>Min walls</label></FormField>
-                    <FormGroup>
-                        {settings.minWalls.map((v, i) =>
-                            <FormInput
-                                key={i}
-                                type="number"
-                                value={v}
-                                onChange={
-                                    (e, {value}) =>
-                                        onChange(immer(settings, draft => {
-                                            draft.minWalls[i] = parseInt(value, 10) || 0;
-                                        }))
-                                }
-                            />
-                        )}
-                    </FormGroup>
-                </Form>
-            </GridColumn>
-            <GridColumn>
-                <Segment basic compact>
-                    <Grid columns={6}>
-                        {settings.fixedPositions.flatMap((row, rowIndex) => (
-                            // <GridRow key={rowIndex}>{
-                                row.map((col, colIndex) =>
-                                    <GridColumn
-                                        key={rowIndex * 100 + colIndex}
-                                    >
-                                        <Segment
-                                            inverted
-                                            color={positionCodeToColor.get(col)}
-                                            onClick={() => {
-                                                const newValue = cyclePositionCode.get(col);
-                                                onChange(immer(settings, draft => {
-                                                    draft.fixedPositions[rowIndex][colIndex] = newValue ?? null;
-                                                }));
-                                            }}
-                                        />
-                                    </GridColumn>
-                                )
-                            // }</GridRow>
-                        ))}
-                    </Grid>
-                </Segment>
-            </GridColumn>
+                        </GridColumn>
+                    )}
+                    <GridColumn>
+                        <FormInput
+                            type="number" min={0} max={floorOpt.fixedLayout.length}
+                            icon="th"
+                            value={floorOpt.minWall}
+                            onChange={
+                                (e, {value}) =>
+                                    onChange(immer(options, draft => {
+                                        draft[floorIndex].minWall = parseInt(value, 10) || 0;
+                                    }))
+                            }
+                        />
+                    </GridColumn>
+                </GridRow>
+            )}
         </Grid>
     </Segment>
 }
