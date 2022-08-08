@@ -19,7 +19,10 @@ type FeatureOptions = {
     readonly: boolean
 }
 
-export type BuildingOptions = [FloorOptions, ...FloorOptions[]]
+export type BuildingOptions = {
+    minWindow: number
+    floors: [FloorOptions, ...FloorOptions[]]
+}
 
 const candidates = [false, true];
 
@@ -40,7 +43,7 @@ export function getCompositions(
     // page: number = 0,
     // perPage: number = 512,
 ): Composition[] {
-    const floors = options.map(opt => {
+    const floors = options.floors.map(opt => {
         return floor6Columns.filter(composition => {
             const [windows, walls] = countItems(composition);
             const matched = () => opt.fixedLayout.every(({isWindow}, index) =>
@@ -59,7 +62,10 @@ export function getCompositions(
     return cartesian(...floors).map((layout, index) => ({
         id: index,
         layout: layout,
-    }));
+    })).filter(composition => {
+        const [windows] = countItems(composition.layout);
+        return windows >= options.minWindow;
+    });
 }
 
 global.getCompositions = getCompositions
@@ -76,34 +82,37 @@ const defaultWindow = feature(true);
 const defaultWall = feature(false);
 
 export function getDefaultBuildingOptions(): BuildingOptions {
-    return [
-        {
-            minWindow: 4,
-            minWall: 1,
-            fixedLayout: [
-                alwaysWindow, configurable, configurable, configurable, configurable, alwaysWindow
-            ],
-        },
-        {
-            minWindow: 4,
-            minWall: 1,
-            fixedLayout: [
-                alwaysWindow, configurable, configurable, configurable, configurable, alwaysWindow
-            ],
-        },
-        {
-            minWindow: 1,
-            minWall: 2,
-            fixedLayout: [
-                alwaysWall, configurable, configurable, defaultWall, configurable, alwaysWall
-            ],
-        },
-        {
-            minWindow: 2,
-            minWall: 4,
-            fixedLayout: [alwaysWall, alwaysWall, alwaysWindow, alwaysWindow, alwaysWall, alwaysWall],
-        },
-    ];
+    return {
+        minWindow: 6,
+        floors: [
+            {
+                minWindow: 4,
+                minWall: 1,
+                fixedLayout: [
+                    alwaysWindow, configurable, configurable, configurable, configurable, alwaysWindow
+                ],
+            },
+            {
+                minWindow: 4,
+                minWall: 1,
+                fixedLayout: [
+                    alwaysWindow, configurable, configurable, configurable, configurable, alwaysWindow
+                ],
+            },
+            {
+                minWindow: 1,
+                minWall: 2,
+                fixedLayout: [
+                    alwaysWall, configurable, configurable, defaultWall, configurable, alwaysWall
+                ],
+            },
+            {
+                minWindow: 2,
+                minWall: 4,
+                fixedLayout: [alwaysWall, alwaysWall, alwaysWindow, alwaysWindow, alwaysWall, alwaysWall],
+            },
+        ],
+    };
 }
 
 function parseLayoutString(s: string): FeatureOptions[] {
